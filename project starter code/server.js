@@ -1,6 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import {filterImageFromURL, deleteLocalFiles} from './util/util.js';
+import {filterImageFromURL, deleteLocalFiles} from './src/util/util.js';
 
 
 
@@ -33,9 +33,26 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util.js';
   
   // Root Endpoint
   // Displays a simple message to the user
-  app.get( "/", async (req, res) => {
-    res.send("try GET /filteredimage?image_url={{}}")
-  } );
+  app.get("/", async (request, response) => {
+    response.send("To process an image, use GET /filteredimage?image_url={{URL}}")
+  });
+
+  app.get("/filteredimage", async (request, response) => {
+
+    try {
+        const imageUrl = request.query.image_url?.toString();
+        if (!imageUrl) {
+            response.status(400).send("No image URL provided.");
+        } else {
+            const pathOfProcessedImg = await filterImageFromURL(imageUrl);
+
+            response.status(200).sendFile(pathOfProcessedImg, () => deleteLocalFiles([pathOfProcessedImg]));
+        }
+    } catch (issue) {
+        console.error('Encountered an error', issue);
+        response.status(500).send(`An error occurred: ${issue.message}`);
+    }
+});
   
 
   // Start the Server
